@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cloudinary Gallery",
+  title: "Gallery",
   description: "A beautiful image and video gallery powered by Cloudinary and Next.js",
 };
 
