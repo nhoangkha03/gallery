@@ -1,0 +1,157 @@
+## 🗂️ Mô tả đầy đủ dự án: **Gallery Web App** (Next.js + Cloudinary)
+
+---
+
+### 🎯 Mục tiêu
+
+Trang web hiển thị **ảnh & video** được tổ chức theo **folder** (album), dữ liệu lưu trên **Cloudinary**, deploy miễn phí trên **Vercel**.
+
+---
+
+### 📐 Kiến trúc tổng quan
+
+```
+[Cloudinary]
+   └── /gallery
+         ├── /du-lich
+         │     ├── anh1.jpg
+         │     └── video1.mp4
+         ├── /gia-dinh
+         └── /su-kien
+
+[Next.js App]
+   ├── Trang chủ → danh sách folder (album)
+   ├── Trang folder → grid ảnh/video
+   ├── Lightbox → xem full ảnh/video
+   └── Trang Admin → upload ảnh/video
+```
+
+---
+
+### 🖥️ Các trang & tính năng
+
+#### 1. 🏠 Trang chủ (`/`)
+- Hiển thị **danh sách album/folder** dạng card
+- Mỗi card có: ảnh thumbnail (ảnh đầu tiên trong folder), tên folder, số lượng file
+- Hover effect đẹp
+
+#### 2. 📁 Trang Album (`/album/[folderName]`)
+- Hiển thị **grid ảnh & video** trong folder đó
+- Phân biệt ảnh và video (icon play trên video)
+- Click vào → mở **Lightbox**
+- Nút back về trang chủ
+
+#### 3. 🔍 Lightbox (modal)
+- Xem ảnh full size
+- Xem video có player
+- Nút next/prev để lướt qua các file
+- Nhấn ESC hoặc click ngoài để đóng
+
+#### 4. 🔐 Trang Admin (`/admin`)
+- Bảo vệ bằng **password đơn giản** (env variable)
+- Chọn folder để upload vào
+- Tạo folder mới
+- Upload nhiều ảnh/video cùng lúc (drag & drop)
+- Xóa ảnh/video
+
+---
+
+### 🔧 Công nghệ sử dụng
+
+| Layer | Công nghệ | Lý do |
+|---|---|---|
+| Framework | **Next.js 14** App Router | SSR, API routes gọn |
+| Storage | **Cloudinary** | CDN + resize ảnh tự động |
+| Styling | **Tailwind CSS** | Nhanh, gọn |
+| UI Components | **shadcn/ui** | Đẹp sẵn |
+| Upload | **next-cloudinary** | Upload trực tiếp từ browser |
+| Deploy | **Vercel** | Free, CI/CD tự động |
+
+---
+
+### 📡 API Routes (Next.js)
+
+| Route | Method | Chức năng |
+|---|---|---|
+| `/api/folders` | GET | Lấy danh sách folder |
+| `/api/media/[folder]` | GET | Lấy ảnh/video trong folder |
+| `/api/upload` | POST | Upload file lên Cloudinary |
+| `/api/delete` | DELETE | Xóa file |
+| `/api/folders/create` | POST | Tạo folder mới |
+
+---
+
+### 🌐 Luồng hoạt động
+
+```
+User mở trang chủ
+  → Next.js gọi Cloudinary API lấy danh sách folder
+  → Hiển thị các album
+
+User click vào album "Du lịch"
+  → Gọi Cloudinary API lấy tất cả media trong folder đó
+  → Hiển thị grid (lazy load, tối ưu bandwidth)
+
+User click vào ảnh
+  → Mở Lightbox, hiển thị full resolution từ Cloudinary CDN
+
+Admin upload ảnh mới
+  → Chọn folder → kéo thả file
+  → File upload thẳng lên Cloudinary (không qua server)
+  → Trang tự động refresh
+```
+
+---
+
+### 📁 Cấu trúc thư mục project
+
+```
+my-gallery/
+├── app/
+│   ├── page.tsx              ← Trang chủ (danh sách album)
+│   ├── album/[folder]/
+│   │   └── page.tsx          ← Trang album
+│   ├── admin/
+│   │   └── page.tsx          ← Trang upload
+│   └── api/
+│       ├── folders/route.ts
+│       ├── media/[folder]/route.ts
+│       ├── upload/route.ts
+│       └── delete/route.ts
+├── components/
+│   ├── AlbumCard.tsx
+│   ├── MediaGrid.tsx
+│   ├── Lightbox.tsx
+│   └── UploadZone.tsx
+├── lib/
+│   └── cloudinary.ts         ← Config + helper functions
+├── .env.local                ← API keys
+└── next.config.js
+```
+
+---
+
+### ⚙️ Biến môi trường cần có
+
+```env
+CLOUDINARY_CLOUD_NAME=xxx
+CLOUDINARY_API_KEY=xxx
+CLOUDINARY_API_SECRET=xxx
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=xxx
+ADMIN_PASSWORD=your_secret_password
+```
+
+---
+
+### 🚀 Lộ trình build
+
+1. **Setup** — Tạo Next.js project, cài packages, cấu hình Cloudinary
+2. **API** — Viết các route lấy folder, media
+3. **UI trang chủ** — Grid album cards
+4. **UI trang album** — Media grid + Lightbox
+5. **Admin** — Upload, xóa, tạo folder
+6. **Deploy** — Push lên GitHub → Vercel tự động deploy
+
+---
+
+Bạn muốn tôi **bắt đầu code luôn** không? Tôi sẽ tạo từng phần theo đúng lộ trình trên. 🚀
