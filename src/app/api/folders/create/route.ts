@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import cloudinary from "@/lib/cloudinary";
 
 export async function POST(request: Request) {
@@ -10,6 +11,8 @@ export async function POST(request: Request) {
     }
 
     const result = await cloudinary.api.create_folder(folderName);
+
+    revalidatePath("/");
 
     return NextResponse.json(result);
   } catch (error) {

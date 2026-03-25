@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import cloudinary from "@/lib/cloudinary";
 
 export async function POST(request: Request) {
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
         }
       ).end(buffer);
     });
+
+    revalidatePath("/");
 
     return NextResponse.json(result);
   } catch (error) {

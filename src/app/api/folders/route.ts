@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     // Cloudinary folders API requires the "gallery" prefix if you organized it that way

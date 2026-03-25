@@ -1,6 +1,8 @@
 import AlbumCard from "@/components/AlbumCard";
 import cloudinary from "@/lib/cloudinary";
 
+export const dynamic = "force-dynamic";
+
 async function getFolders() {
   try {
     const { folders } = await cloudinary.api.root_folders();
