@@ -123,7 +123,7 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[100vw] w-full h-[100vh] p-0 overflow-hidden bg-black border-none ring-0 focus:ring-0 outline-none">
+      <DialogContent className="max-w-none w-screen h-screen p-0 overflow-hidden bg-black/95 border-none ring-0 focus:ring-0 outline-none sm:max-w-none rounded-none shadow-none">
         <DialogTitle className="sr-only">Viewer - {currentItem.public_id}</DialogTitle>
         
         <div className="relative w-full h-full flex items-center justify-center">
@@ -190,7 +190,7 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
           </div>
 
           {/* Main Media Content */}
-          <div className="relative w-full h-full mt-4 flex items-center justify-center p-4 md:p-12 z-10 overflow-hidden">
+          <div className="relative w-full h-full flex items-center justify-center p-2 md:p-4 z-10 overflow-hidden mt-0">
             <AnimatePresence initial={false} custom={direction}>
               <motion.div
                 key={currentItem.public_id}
@@ -217,7 +217,7 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
                   <img
                     src={currentItem.secure_url}
                     alt={currentItem.public_id}
-                    className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.5)] ring-1 ring-white/10"
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl ring-1 ring-white/10"
                   />
                 )}
               </motion.div>
