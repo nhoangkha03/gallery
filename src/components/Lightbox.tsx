@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { X, ChevronLeft, ChevronRight, Maximize2, Download } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Maximize2, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface MediaItem {
   public_id: string;
@@ -23,7 +25,13 @@ interface LightboxProps {
 
 export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavigate }: LightboxProps) {
   const [direction, setDirection] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
   const currentItem = items[currentIndex];
+
+  useEffect(() => {
+    setIsAdmin(localStorage.getItem("is_admin") === "true");
+  }, []);
 
   const handlePrevious = useCallback(() => {
     setDirection(-1);
@@ -81,6 +89,38 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
     document.body.removeChild(link);
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this item?")) return;
+
+    try {
+      const res = await fetch("/api/delete", {
+        method: "DELETE",
+        body: JSON.stringify({ 
+          publicId: currentItem.public_id,
+          resourceType: currentItem.resource_type 
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Item deleted successfully");
+        
+        // If it was the last item, close the lightbox
+        if (items.length === 1) {
+          onClose();
+        } else {
+          // Navigate to next item before the list updates
+          handleNext();
+        }
+        
+        router.refresh();
+      } else {
+        throw new Error("Failed to delete item");
+      }
+    } catch (error) {
+      toast.error("Error deleting item");
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[100vw] w-full h-[100vh] p-0 overflow-hidden bg-black border-none ring-0 focus:ring-0 outline-none">
@@ -127,6 +167,17 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
                 >
                   <Download className="w-5 h-5" />
                 </Button>
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-12 h-12 rounded-2xl text-white hover:bg-destructive/20 hover:text-destructive transition-colors bg-white/10 border border-white/10"
+                    onClick={handleDelete}
+                    title="Xóa"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

@@ -1,30 +1,48 @@
-import AlbumCard from "@/components/AlbumCard";
+import AlbumGrid from "@/components/AlbumGrid";
 import cloudinary from "@/lib/cloudinary";
 
-export const dynamic = "force-dynamic";
+// Revalidate data every 60 seconds instead of force-dynamic to save Cloudinary API credits
+export const revalidate = 60;
 
 async function getFolders() {
   try {
+    // 1. Fetch folders
     const { folders } = await cloudinary.api.root_folders();
     
+    if (!folders || folders.length === 0) return [];
+
+    // 2. Fetch thumbnails only if needed, and with a slight delay or batching
+    // For large galleries, this is where the rate limit usually hits.
     const foldersWithThumbnails = await Promise.all(
       folders.map(async (folder: any) => {
-        const { resources, total_count } = await cloudinary.search
-          .expression(`folder:"${folder.name}"`)
-          .sort_by("public_id", "desc")
-          .execute();
-        
-        return {
-          name: folder.name,
-          path: folder.path,
-          thumbnail: resources[0]?.secure_url || null,
-          count: total_count || resources.length,
-        };
+        try {
+          const { resources, total_count } = await cloudinary.search
+            .expression(`folder:"${folder.name}"`)
+            .sort_by("public_id", "desc")
+            .max_results(1)
+            .execute();
+          
+          return {
+            name: folder.name,
+            path: folder.path,
+            thumbnail: resources[0]?.secure_url || null,
+            count: total_count || resources.length,
+          };
+        } catch (innerError: any) {
+          // If a single folder search fails (e.g. rate limit), return folder without thumbnail
+          console.warn(`Warning: Could not fetch details for folder ${folder.name}:`, innerError.message);
+          return {
+            name: folder.name,
+            path: folder.path,
+            thumbnail: null,
+            count: 0
+          };
+        }
       })
     );
     return foldersWithThumbnails;
-  } catch (error) {
-    console.error("Error fetching folders:", error);
+  } catch (error: any) {
+    console.error("Critical error fetching folders:", error.message);
     return [];
   }
 }
@@ -64,17 +82,7 @@ export default async function HomePage() {
             <p className="text-muted-foreground mt-3 text-lg">Head to the admin panel to upload your first collection.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {folders.map((folder: any) => (
-              <AlbumCard
-                key={folder.path}
-                name={folder.name}
-                path={folder.path}
-                thumbnail={folder.thumbnail}
-                count={folder.count}
-              />
-            ))}
-          </div>
+          <AlbumGrid initialFolders={folders} />
         )}
       </section>
     </main>

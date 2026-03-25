@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Play } from "lucide-react";
+import { Play, Trash2 } from "lucide-react";
 import Lightbox from "./Lightbox";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface MediaItem {
   public_id: string;
@@ -18,10 +20,40 @@ interface MediaGridProps {
 export default function MediaGrid({ items }: MediaGridProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsAdmin(localStorage.getItem("is_admin") === "true");
+  }, []);
 
   const openLightbox = (index: number) => {
     setCurrentIndex(index);
     setLightboxOpen(true);
+  };
+
+  const handleDelete = async (e: React.MouseEvent, item: MediaItem) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this item?")) return;
+
+    try {
+      const res = await fetch("/api/delete", {
+        method: "DELETE",
+        body: JSON.stringify({ 
+          publicId: item.public_id,
+          resourceType: item.resource_type 
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Item deleted successfully");
+        router.refresh();
+      } else {
+        throw new Error("Failed to delete item");
+      }
+    } catch (error) {
+      toast.error("Error deleting item");
+    }
   };
 
   return (
@@ -51,6 +83,14 @@ export default function MediaGrid({ items }: MediaGridProps) {
                 alt={item.public_id}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
+            )}
+            {isAdmin && (
+              <button
+                onClick={(e) => handleDelete(e, item)}
+                className="absolute top-2 right-2 p-2 bg-destructive/80 hover:bg-destructive text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all z-10 shadow-lg"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
             <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-lg pointer-events-none" />
           </div>

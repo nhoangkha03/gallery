@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Folder } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Folder, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface AlbumCardProps {
   name: string;
@@ -10,9 +13,40 @@ interface AlbumCardProps {
 }
 
 export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardProps) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsAdmin(localStorage.getItem("is_admin") === "true");
+  }, []);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!confirm(`Are you sure you want to delete "${name}" and all its contents?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/folders/${encodeURIComponent(name)}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast.success(`Collection "${name}" deleted`);
+        router.refresh();
+      } else {
+        throw new Error("Failed to delete");
+      }
+    } catch (error) {
+      toast.error("Error deleting collection");
+    }
+  };
+
   return (
     <Link href={`/album/${name}`}>
-      <Card className="overflow-hidden border-none shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer group rounded-2xl bg-muted/20">
+      <Card className="overflow-hidden border-none shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer group rounded-2xl bg-muted/20 relative">
         <CardContent className="p-0 relative aspect-[4/3] flex items-center justify-center overflow-hidden">
           {thumbnail ? (
             <img
@@ -37,9 +71,18 @@ export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardPro
             </p>
           </div>
           
-          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-             <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
-               <Folder className="w-3 h-3 text-black fill-black" />
+          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex gap-2">
+             {isAdmin && (
+               <button 
+                 onClick={handleDelete}
+                 className="p-2 bg-destructive text-white rounded-lg hover:scale-110 active:scale-95 transition-all shadow-lg"
+                 title="Xóa bộ sưu tập"
+               >
+                 <Trash2 className="w-4 h-4" />
+               </button>
+             )}
+             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+               <Folder className="w-4 h-4 text-black fill-black" />
              </div>
           </div>
         </CardContent>

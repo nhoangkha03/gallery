@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, LogOut, ChevronLeft, ShieldCheck } from "lucide-react";
+import { Lock, LogOut, ChevronLeft, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UploadZone from "@/components/UploadZone";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -40,6 +41,28 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsAdmin(false);
     localStorage.removeItem("is_admin");
+  };
+
+  const handleDeleteFolder = async (folderName: string) => {
+    if (!confirm(`Are you sure you want to delete "${folderName}" and all its contents? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/folders/${encodeURIComponent(folderName)}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast.success(`Collection "${folderName}" deleted successfully`);
+        fetchFolders();
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete folder");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete collection");
+    }
   };
 
   if (!isAdmin) {
@@ -93,8 +116,40 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 space-y-12">
         <UploadZone folders={folders} onUploadSuccess={fetchFolders} />
+        
+        <section className="bg-card p-8 rounded-3xl border shadow-sm">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <span className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+            </span>
+            Manage Collections
+          </h2>
+          
+          <div className="grid gap-4">
+            {folders.length === 0 ? (
+              <p className="text-muted-foreground italic">No collections found.</p>
+            ) : (
+              folders.map((folder) => (
+                <div key={folder} className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-transparent hover:border-primary/20 hover:bg-muted/40 transition-all group">
+                  <div>
+                    <h3 className="font-semibold text-lg capitalize">{folder.replace(/-/g, " ")}</h3>
+                    <p className="text-sm text-muted-foreground">{folder}</p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                    onClick={() => handleDeleteFolder(folder)}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );
