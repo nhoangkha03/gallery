@@ -39,7 +39,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ folder: 
     <main className="min-h-screen">
       {/* Album Header Hero */}
       <section className="bg-muted/30 border-b relative py-16 mb-12">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-4 lg:px-8">
           <Link
             href="/"
             className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6 group"
@@ -62,7 +62,7 @@ export default async function AlbumPage({ params }: { params: Promise<{ folder: 
         </div>
       </section>
 
-      <div className="container mx-auto px-4 pb-20">
+      <div className="w-full px-4 lg:px-8 pb-20">
         {media.length === 0 ? (
           <div className="text-center py-32 bg-muted/10 rounded-3xl border-2 border-dashed">
             <p className="text-2xl font-semibold text-muted-foreground">This collection is currently empty.</p>
