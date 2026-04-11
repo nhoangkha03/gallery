@@ -1,5 +1,6 @@
 import AlbumGrid from "@/components/AlbumGrid";
 import cloudinary from "@/lib/cloudinary";
+import { sortFolders } from "@/lib/config";
 
 // Revalidate data every 60 seconds instead of force-dynamic to save Cloudinary API credits
 export const revalidate = 60;
@@ -11,21 +12,34 @@ async function getFolders() {
     
     if (!folders || folders.length === 0) return [];
 
+    const sortedFolders = sortFolders(folders);
+
     // 2. Fetch thumbnails only if needed, and with a slight delay or batching
     // For large galleries, this is where the rate limit usually hits.
     const foldersWithThumbnails = await Promise.all(
-      folders.map(async (folder: any) => {
+      sortedFolders.map(async (folder: any) => {
         try {
           const { resources, total_count } = await cloudinary.search
             .expression(`folder:"${folder.name}"`)
             .sort_by("public_id", "desc")
-            .max_results(1)
+            .max_results(30)
             .execute();
           
+          let firstItem = resources.find((r: any) => r.resource_type === "image") || resources[0];
+          let thumbUrl = firstItem?.secure_url || null;
+
+          // If the only item found is a video, convert its URL to a .jpg thumbnail
+          // Cloudinary automatically generates image thumbnails for videos when extension is .jpg
+          if (thumbUrl && firstItem?.resource_type === "video") {
+            thumbUrl = thumbUrl.replace(/\.[^/.]+$/, ".jpg");
+            // Sometimes cloudinary URLs already have an extension, if not we might need to append
+            // But secure_url from cloudinary always has an extension (.mp4, .mov)
+          }
+
           return {
             name: folder.name,
             path: folder.path,
-            thumbnail: resources[0]?.secure_url || null,
+            thumbnail: thumbUrl,
             count: total_count || resources.length,
           };
         } catch (innerError: any) {
