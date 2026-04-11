@@ -5,12 +5,25 @@ import cloudinary from "@/lib/cloudinary";
 
 async function getMedia(folder: string) {
   try {
-    const { resources } = await cloudinary.search
-      .expression(`folder:"${folder}"`)
-      .sort_by("public_id", "desc")
-      .max_results(100)
-      .execute();
-    return resources;
+    let allResources: any[] = [];
+    let nextCursor = null;
+
+    do {
+      const searchParams = cloudinary.search
+        .expression(`folder:"${folder}"`)
+        .sort_by("public_id", "desc")
+        .max_results(500); // 500 là giới hạn tối đa cho mỗi lần gọi API của Cloudinary
+
+      if (nextCursor) {
+        searchParams.next_cursor(nextCursor);
+      }
+
+      const response = await searchParams.execute();
+      allResources = allResources.concat(response.resources);
+      nextCursor = response.next_cursor;
+    } while (nextCursor);
+
+    return allResources;
   } catch (error) {
     console.error(`Error fetching media for folder ${folder}:`, error);
     return [];
