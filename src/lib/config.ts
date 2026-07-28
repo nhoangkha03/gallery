@@ -1,11 +1,13 @@
+import type { CloudinaryFolder } from "@/lib/gallery";
+
 export const COLLECTION_ORDER: string[] = [
   "Mùa hè xanh",
   "Kỉ niệm",
   "Badminton",
 ];
 
-export function sortFolders(folders: any[]) {
-  return folders.sort((a, b) => {
+export function sortFolders<T extends CloudinaryFolder>(folders: T[]) {
+  return [...folders].sort((a, b) => {
     const indexA = COLLECTION_ORDER.indexOf(a.name);
     const indexB = COLLECTION_ORDER.indexOf(b.name);
 
@@ -15,7 +17,6 @@ export function sortFolders(folders: any[]) {
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
 
-    // Nếu không có trong danh sách cố định, sắp xếp theo bảng chữ cái A-Z
-    return a.name.localeCompare(b.name);
+    return a.name.localeCompare(b.name, "vi");
   });
 }

@@ -1,14 +1,14 @@
 import AlbumGrid from "@/components/AlbumGrid";
 import cloudinary from "@/lib/cloudinary";
 import { sortFolders } from "@/lib/config";
+import type { CloudinaryFolder, CloudinarySearchResponse, GalleryFolder } from "@/lib/gallery";
 
 // Revalidate data every 60 seconds instead of force-dynamic to save Cloudinary API credits
 export const revalidate = 60;
 
-async function getFolders() {
+async function getFolders(): Promise<GalleryFolder[]> {
   try {
-    // 1. Fetch folders
-    const { folders } = await cloudinary.api.root_folders();
+    const { folders } = await cloudinary.api.root_folders() as { folders?: CloudinaryFolder[] };
     
     if (!folders || folders.length === 0) return [];
 
@@ -17,23 +17,19 @@ async function getFolders() {
     // 2. Fetch thumbnails only if needed, and with a slight delay or batching
     // For large galleries, this is where the rate limit usually hits.
     const foldersWithThumbnails = await Promise.all(
-      sortedFolders.map(async (folder: any) => {
+      sortedFolders.map(async (folder) => {
         try {
           const { resources, total_count } = await cloudinary.search
             .expression(`folder:"${folder.name}"`)
             .sort_by("public_id", "desc")
             .max_results(30)
-            .execute();
+            .execute() as CloudinarySearchResponse;
           
-          let firstItem = resources.find((r: any) => r.resource_type === "image") || resources[0];
+          const firstItem = resources.find((r) => r.resource_type === "image") || resources[0];
           let thumbUrl = firstItem?.secure_url || null;
 
-          // If the only item found is a video, convert its URL to a .jpg thumbnail
-          // Cloudinary automatically generates image thumbnails for videos when extension is .jpg
           if (thumbUrl && firstItem?.resource_type === "video") {
             thumbUrl = thumbUrl.replace(/\.[^/.]+$/, ".jpg");
-            // Sometimes cloudinary URLs already have an extension, if not we might need to append
-            // But secure_url from cloudinary always has an extension (.mp4, .mov)
           }
 
           return {
@@ -42,9 +38,9 @@ async function getFolders() {
             thumbnail: thumbUrl,
             count: total_count || resources.length,
           };
-        } catch (innerError: any) {
-          // If a single folder search fails (e.g. rate limit), return folder without thumbnail
-          console.warn(`Warning: Could not fetch details for folder ${folder.name}:`, innerError.message);
+        } catch (innerError) {
+          const message = innerError instanceof Error ? innerError.message : "Không rõ lỗi";
+          console.warn(`Không thể tải chi tiết album ${folder.name}:`, message);
           return {
             name: folder.name,
             path: folder.path,
@@ -55,8 +51,9 @@ async function getFolders() {
       })
     );
     return foldersWithThumbnails;
-  } catch (error: any) {
-    console.error("Critical error fetching folders:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Không rõ lỗi";
+    console.error("Không thể tải danh sách album:", message);
     return [];
   }
 }
@@ -65,35 +62,53 @@ export default async function HomePage() {
   const folders = await getFolders();
 
   return (
-    <main className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent -z-10" />
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-10 opacity-60" />
-        <div className="absolute top-1/2 -right-24 w-72 h-72 bg-primary/5 rounded-full blur-3xl -z-10 opacity-40" />
-        
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
-            Professional <br /> Media Gallery
-          </h1>
-          <p className="max-w-2xl mx-auto text-xl text-muted-foreground leading-relaxed">
-            A secure, Cloudinary-powered space for your most precious moments. 
-            Organized elegantly, delivered at light speed.
-          </p>
+    <main className="min-h-screen bg-[linear-gradient(180deg,var(--background),oklch(0.985_0.01_95))]">
+      <section className="border-b bg-background">
+        <div className="mx-auto grid w-full max-w-[1800px] gap-8 px-4 py-10 lg:grid-cols-[1fr_auto] lg:px-8 lg:py-14">
+          <div className="max-w-3xl">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-amber-600">
+              Thư viện cá nhân
+            </p>
+            <h1 className="text-4xl font-black leading-tight tracking-tight text-foreground md:text-6xl">
+              Lưu giữ ảnh và video theo từng album rõ ràng.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
+              Duyệt nhanh, xem toàn màn hình, tải xuống và quản lý nội dung từ một giao diện tiếng Việt gọn gàng.
+            </p>
+          </div>
+
+          <div className="grid min-w-[260px] grid-cols-2 gap-3 rounded-2xl border bg-muted/25 p-4 lg:min-w-[360px]">
+            <div className="rounded-xl bg-background p-4 ring-1 ring-border">
+              <p className="text-sm font-medium text-muted-foreground">Album</p>
+              <p className="mt-2 text-3xl font-black">{folders.length}</p>
+            </div>
+            <div className="rounded-xl bg-background p-4 ring-1 ring-border">
+              <p className="text-sm font-medium text-muted-foreground">Tổng tệp</p>
+              <p className="mt-2 text-3xl font-black">
+                {folders.reduce((total, folder) => total + folder.count, 0)}
+              </p>
+            </div>
+            <div className="col-span-2 rounded-xl bg-foreground p-4 text-background">
+              <p className="text-sm font-semibold opacity-75">Cập nhật</p>
+              <p className="mt-2 text-lg font-bold">Dữ liệu tự làm mới mỗi 60 giây</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-12">
-          <h2 className="text-3xl font-bold tracking-tight">Recent Albums</h2>
-          <div className="h-px flex-1 mx-8 bg-gradient-to-r from-muted to-transparent hidden md:block" />
-          <p className="text-muted-foreground font-medium">{folders.length} collections</p>
+      <section className="mx-auto w-full max-w-[1800px] px-4 py-10 lg:px-8">
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-amber-600">Bộ sưu tập</p>
+            <h2 className="mt-1 text-3xl font-black tracking-tight">Tất cả album</h2>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">{folders.length} album đang hiển thị</p>
         </div>
 
         {folders.length === 0 ? (
-          <div className="text-center py-32 bg-muted/20 rounded-3xl border-2 border-dashed border-muted/50">
-            <p className="text-2xl font-semibold text-muted-foreground">Your gallery is waiting to be filled.</p>
-            <p className="text-muted-foreground mt-3 text-lg">Head to the admin panel to upload your first collection.</p>
+          <div className="rounded-2xl border-2 border-dashed bg-background py-24 text-center">
+            <p className="text-2xl font-bold text-foreground">Thư viện chưa có album.</p>
+            <p className="mt-3 text-lg text-muted-foreground">Vào trang quản trị để tạo album và tải ảnh hoặc video đầu tiên.</p>
           </div>
         ) : (
           <AlbumGrid initialFolders={folders} />

@@ -16,8 +16,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gallery",
-  description: "A beautiful image and video gallery powered by Cloudinary and Next.js",
+  title: {
+    default: "Ký ức số",
+    template: "%s | Ký ức số",
+  },
+  description: "Thư viện ảnh và video cá nhân được lưu trữ an toàn trên Cloudinary.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -27,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground relative">

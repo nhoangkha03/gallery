@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
-import { Folder, Trash2 } from "lucide-react";
+import { ArrowUpRight, Folder, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { formatAlbumName, pluralizeAsset } from "@/lib/gallery";
 
 interface AlbumCardProps {
   name: string;
@@ -15,6 +19,8 @@ interface AlbumCardProps {
 export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
+  const displayName = formatAlbumName(name);
+  const albumHref = `/album/${encodeURIComponent(path || name)}`;
 
   useEffect(() => {
     setIsAdmin(localStorage.getItem("is_admin") === "true");
@@ -24,7 +30,7 @@ export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardPro
     e.preventDefault();
     e.stopPropagation();
 
-    if (!confirm(`Are you sure you want to delete "${name}" and all its contents?`)) {
+    if (!confirm(`Bạn chắc chắn muốn xóa album "${displayName}" cùng toàn bộ nội dung bên trong?`)) {
       return;
     }
 
@@ -34,55 +40,57 @@ export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardPro
       });
 
       if (res.ok) {
-        toast.success(`Collection "${name}" deleted`);
+        toast.success(`Đã xóa album "${displayName}"`);
         router.refresh();
       } else {
-        throw new Error("Failed to delete");
+        throw new Error("Không thể xóa album");
       }
-    } catch (error) {
-      toast.error("Error deleting collection");
+    } catch {
+      toast.error("Không thể xóa album. Vui lòng thử lại.");
     }
   };
 
   return (
-    <Link href={`/album/${name}`}>
-      <Card className="overflow-hidden border-none shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer group rounded-2xl bg-muted/20 relative">
-        <CardContent className="p-0 relative aspect-[4/3] flex items-center justify-center overflow-hidden">
+    <Link href={albumHref} className="block h-full">
+      <Card className="group relative h-full overflow-hidden rounded-2xl border bg-background py-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+        <CardContent className="relative flex aspect-[4/3] items-center justify-center overflow-hidden p-0">
           {thumbnail ? (
-            <img
+            <Image
               src={thumbnail}
-              alt={name}
-              className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700 brightness-95 group-hover:brightness-100"
+              alt={`Ảnh đại diện album ${displayName}`}
+              fill
+              sizes="(min-width: 1536px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="object-cover brightness-95 transition-transform duration-700 group-hover:scale-105 group-hover:brightness-100"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <Folder className="w-16 h-16 text-primary/40 group-hover:scale-110 transition-transform duration-500" />
+            <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,oklch(0.97_0.03_210),oklch(0.96_0.04_80))]">
+              <Folder className="h-16 w-16 text-primary/45 transition-transform duration-500 group-hover:scale-110" />
             </div>
           )}
           
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 transition-opacity duration-300 group-hover:opacity-40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent transition-opacity duration-300 group-hover:opacity-90" />
           
-          <div className="absolute bottom-4 left-4 right-4">
-            <h3 className="font-bold text-xl text-white capitalize truncate drop-shadow-md">
-              {name.replace(/-/g, " ")}
+          <div className="absolute inset-x-4 bottom-4">
+            <h3 className="truncate text-xl font-black capitalize tracking-tight text-white drop-shadow-md">
+              {displayName}
             </h3>
-            <p className="text-white/80 text-sm font-medium">
-              {count} {count === 1 ? 'Item' : 'Items'}
+            <p className="mt-1 text-sm font-semibold text-white/80">
+              {pluralizeAsset(count)}
             </p>
           </div>
           
-          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex gap-2">
+          <div className="absolute right-4 top-4 flex translate-y-2 gap-2 rounded-xl border border-white/20 bg-white/15 p-2 opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
              {isAdmin && (
                <button 
                  onClick={handleDelete}
-                 className="p-2 bg-destructive text-white rounded-lg hover:scale-110 active:scale-95 transition-all shadow-lg"
+                 className="rounded-lg bg-destructive p-2 text-white shadow-lg transition-all hover:scale-105 active:scale-95"
                  title="Xóa bộ sưu tập"
                >
-                 <Trash2 className="w-4 h-4" />
+                 <Trash2 className="h-4 w-4" />
                </button>
              )}
-             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-               <Folder className="w-4 h-4 text-black fill-black" />
+             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black">
+               <ArrowUpRight className="h-4 w-4" />
              </div>
           </div>
         </CardContent>

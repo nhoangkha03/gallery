@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, ShieldCheck, Home, Image as ImageIcon } from "lucide-react";
+import Image from "next/image";
+import { Home, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -9,20 +10,22 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: "Home", href: "/", icon: Home },
-    { name: "Admin", href: "/admin", icon: ShieldCheck },
+    { name: "Trang chủ", href: "/", icon: Home },
+    { name: "Quản trị", href: "/admin", icon: ShieldCheck },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-      <div className="w-full px-4 lg:px-8 flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="bg-primary p-2 rounded-xl group-hover:rotate-12 transition-transform duration-300">
-            <Camera className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-            CloudGallery
-          </span>
+    <nav className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
+      <div className="mx-auto flex h-16 w-full max-w-[1800px] items-center justify-between px-4 lg:px-8">
+        <Link href="/" className="flex min-w-0 items-center gap-3 group" aria-label="Về trang chủ Ký ức số">
+          <Image
+            src="/logo.svg"
+            alt="Ký ức số"
+            width={154}
+            height={45}
+            priority
+            className="h-11 w-auto"
+          />
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-4 font-medium">
@@ -35,10 +38,10 @@ export default function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 hover:bg-muted",
+                  "flex h-10 items-center gap-2 rounded-full px-3 text-sm transition-all duration-300 sm:px-4",
                   isActive 
-                    ? "bg-primary/10 text-primary shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <Icon className="w-4 h-4" />

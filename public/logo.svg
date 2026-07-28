@@ -1,0 +1,8 @@
+<svg width="220" height="64" viewBox="0 0 220 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ký ức số">
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#111827"/>
+  <path d="M17 42.5L27.5 31L35 38.5L40.5 32L48 42.5H17Z" fill="#F8FAFC"/>
+  <circle cx="43" cy="21" r="5" fill="#F59E0B"/>
+  <path d="M18 19.5C18 17.0147 20.0147 15 22.5 15H41.5C43.9853 15 46 17.0147 46 19.5V44.5C46 46.9853 43.9853 49 41.5 49H22.5C20.0147 49 18 46.9853 18 44.5V19.5Z" stroke="#F8FAFC" stroke-width="3"/>
+  <text x="72" y="30" fill="#111827" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800">Ký ức số</text>
+  <text x="73" y="48" fill="#64748B" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="600">Thư viện ảnh &amp; video</text>
+</svg>
