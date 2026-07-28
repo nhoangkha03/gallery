@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, LogOut, ChevronLeft, ShieldCheck, Trash2 } from "lucide-react";
+import { Folder, Lock, LogOut, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UploadZone from "@/components/UploadZone";
@@ -12,39 +12,73 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [password, setPassword] = useState("");
   const [folders, setFolders] = useState<string[]>([]);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const fetchFolders = async () => {
     const res = await fetch("/api/folders");
     if (res.ok) {
-      const data = await res.json();
-      setFolders(data.map((f: any) => f.name));
+      const data = await res.json() as Array<{ name: string }>;
+      setFolders(data.map((f) => f.name));
     }
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem("is_admin");
-    if (saved === "true") {
-      setIsAdmin(true);
-      fetchFolders();
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/status");
+        const data = await res.json() as { isAdmin: boolean };
+        setIsAdmin(data.isAdmin);
+        if (data.isAdmin) {
+          localStorage.setItem("is_admin", "true");
+          await fetchFolders();
+        } else {
+          localStorage.removeItem("is_admin");
+        }
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "admin123") { // Simplified for demo, should use env in real app
+
+    setIsLoggingIn(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error || "Không thể đăng nhập.");
+      }
+
       setIsAdmin(true);
       localStorage.setItem("is_admin", "true");
-      fetchFolders();
+      await fetchFolders();
+      toast.success("Đăng nhập quản trị thành công.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Không thể đăng nhập.";
+      toast.error(message);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     setIsAdmin(false);
     localStorage.removeItem("is_admin");
+    toast.success("Đã đăng xuất.");
   };
 
   const handleDeleteFolder = async (folderName: string) => {
-    if (!confirm(`Are you sure you want to delete "${folderName}" and all its contents? This action cannot be undone.`)) {
+    if (!confirm(`Bạn chắc chắn muốn xóa album "${folderName}" cùng toàn bộ nội dung bên trong? Thao tác này không thể hoàn tác.`)) {
       return;
     }
 
@@ -54,44 +88,57 @@ export default function AdminPage() {
       });
 
       if (res.ok) {
-        toast.success(`Collection "${folderName}" deleted successfully`);
+        toast.success(`Đã xóa album "${folderName}".`);
         fetchFolders();
       } else {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete folder");
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error || "Không thể xóa album");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete collection");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Không thể xóa album.";
+      toast.error(message);
     }
   };
 
+  if (isCheckingAuth) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-muted/20 p-4">
+        <div className="flex items-center gap-3 rounded-2xl border bg-background px-5 py-4 shadow-sm">
+          <LoaderIcon />
+          <span className="font-semibold">Đang kiểm tra quyền truy cập...</span>
+        </div>
+      </main>
+    );
+  }
+
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/5">
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-8 bg-card p-8 rounded-3xl border shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,var(--background),oklch(0.985_0.01_95))] p-4">
+        <form onSubmit={handleLogin} className="group relative w-full max-w-sm overflow-hidden rounded-2xl border bg-card p-8 shadow-xl">
+          <div className="absolute left-0 top-0 h-1 w-full bg-amber-500" />
           <div className="text-center">
-            <div className="bg-primary/10 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3 group-hover:rotate-0 transition-transform duration-500">
-              <Lock className="w-10 h-10 text-primary" />
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-transform duration-500 group-hover:rotate-3">
+              <Lock className="h-10 w-10" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">Admin Access</h1>
-            <p className="text-muted-foreground mt-2 font-medium italic">Secure control center</p>
+            <h1 className="text-3xl font-black tracking-tight">Khu vực quản trị</h1>
+            <p className="mt-2 font-medium text-muted-foreground">Đăng nhập để tải lên, tạo album và xóa nội dung.</p>
           </div>
-          <div className="space-y-4">
+          <div className="mt-8 space-y-4">
             <Input
               type="password"
-              placeholder="System Password"
+              placeholder="Mật khẩu quản trị"
               className="h-12 rounded-xl"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Button type="submit" className="w-full h-12 rounded-xl text-lg font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-              Authenticate
+            <Button type="submit" className="h-12 w-full rounded-xl text-base font-bold transition-all active:scale-[0.98]" disabled={isLoggingIn}>
+              {isLoggingIn && <LoaderIcon />}
+              Đăng nhập
             </Button>
           </div>
-          <div className="text-center">
-            <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
-              Return to Public Gallery
+          <div className="mt-6 text-center">
+            <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              Quay lại thư viện công khai
             </Link>
           </div>
         </form>
@@ -100,50 +147,52 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen pb-20">
-      <header className="bg-muted/30 border-b relative py-12 mb-12">
-        <div className="container mx-auto px-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <main className="min-h-screen bg-[linear-gradient(180deg,var(--background),oklch(0.985_0.01_95))] pb-20">
+      <header className="relative mb-10 border-b bg-background py-10">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col justify-between gap-6 px-4 md:flex-row md:items-center">
           <div>
-            <div className="flex items-center gap-3 text-primary font-bold tracking-widest uppercase text-xs mb-3">
-              <ShieldCheck className="w-4 h-4" />
-              Administrative Control
+            <div className="mb-3 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-amber-600">
+              <ShieldCheck className="h-4 w-4" />
+              Bảng điều khiển
             </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight">Management Console</h1>
+            <h1 className="text-4xl font-black tracking-tight md:text-5xl">Quản lý thư viện</h1>
+            <p className="mt-3 max-w-2xl text-muted-foreground">Tạo album, tải media và dọn nội dung cũ trong một nơi.</p>
           </div>
-          <Button variant="outline" onClick={handleLogout} className="w-fit rounded-xl border-2 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all">
-            <LogOut className="w-4 h-4 mr-2" /> Sign Out
+          <Button variant="outline" onClick={handleLogout} className="h-11 w-fit rounded-xl border-2 transition-all hover:border-destructive hover:bg-destructive hover:text-white">
+            <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
           </Button>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 space-y-12">
+      <div className="mx-auto max-w-[1200px] space-y-10 px-4">
         <UploadZone folders={folders} onUploadSuccess={fetchFolders} />
         
-        <section className="bg-card p-8 rounded-3xl border shadow-sm">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <span className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-primary" />
+        <section className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+          <h2 className="mb-6 flex items-center gap-2 text-2xl font-black">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Folder className="h-5 w-5" />
             </span>
-            Manage Collections
+            Danh sách album
           </h2>
           
           <div className="grid gap-4">
             {folders.length === 0 ? (
-              <p className="text-muted-foreground italic">No collections found.</p>
+              <p className="text-muted-foreground">Chưa có album nào.</p>
             ) : (
               folders.map((folder) => (
-                <div key={folder} className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-transparent hover:border-primary/20 hover:bg-muted/40 transition-all group">
-                  <div>
-                    <h3 className="font-semibold text-lg capitalize">{folder.replace(/-/g, " ")}</h3>
+                <div key={folder} className="group flex items-center justify-between rounded-2xl border border-transparent bg-muted/20 p-4 transition-all hover:border-primary/20 hover:bg-muted/40">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-bold capitalize">{folder.replace(/-/g, " ")}</h3>
                     <p className="text-sm text-muted-foreground">{folder}</p>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                    className="rounded-xl text-muted-foreground opacity-0 transition-colors hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                     onClick={() => handleDeleteFolder(folder)}
+                    title="Xóa album"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="h-5 w-5" />
                   </Button>
                 </div>
               ))
@@ -153,4 +202,8 @@ export default function AdminPage() {
       </div>
     </main>
   );
+}
+
+function LoaderIcon() {
+  return <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />;
 }

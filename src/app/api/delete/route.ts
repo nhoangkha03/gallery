@@ -1,21 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import cloudinary from "@/lib/cloudinary";
+import { isAdminRequest, unauthorizedResponse } from "@/lib/auth";
 
-export async function DELETE(request: Request) {
+interface DeletePayload {
+  publicId?: string;
+  resourceType?: string;
+}
+
+export async function DELETE(request: NextRequest) {
+  if (!isAdminRequest(request)) return unauthorizedResponse();
+
   try {
-    const { publicId, resourceType } = await request.json();
+    const { publicId, resourceType } = await request.json() as DeletePayload;
 
     if (!publicId) {
-      return NextResponse.json({ error: "Public ID is required" }, { status: 400 });
+      return NextResponse.json({ error: "Thiếu mã tệp cần xóa." }, { status: 400 });
     }
 
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType || "image",
     });
 
+    const folder = publicId.split("/").slice(0, -1).join("/");
+    revalidatePath("/");
+    if (folder) revalidatePath(`/album/${encodeURIComponent(folder)}`);
+
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error deleting resource:", error);
-    return NextResponse.json({ error: "Failed to delete resource" }, { status: 500 });
+    console.error("Không thể xóa tệp:", error);
+    return NextResponse.json({ error: "Không thể xóa tệp." }, { status: 500 });
   }
 }

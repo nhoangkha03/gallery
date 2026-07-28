@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
+import type { CloudinarySearchResponse } from "@/lib/gallery";
 
 export async function GET(
   request: Request,
@@ -13,11 +14,11 @@ export async function GET(
       .expression(`folder:"${decodedFolder}"`)
       .sort_by("public_id", "desc")
       .max_results(100)
-      .execute();
+      .execute() as CloudinarySearchResponse;
 
     return NextResponse.json(resources);
   } catch (error) {
-    console.error(`Error fetching media for folder ${decodedFolder}:`, error);
-    return NextResponse.json({ error: "Failed to fetch media" }, { status: 500 });
+    console.error(`Không thể tải media trong album ${decodedFolder}:`, error);
+    return NextResponse.json({ error: "Không thể tải media" }, { status: 500 });
   }
 }

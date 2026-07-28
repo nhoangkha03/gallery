@@ -13,10 +13,8 @@ export default function BackgroundMusic() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Set volume to 80%
     audio.volume = 0.8;
 
-    // Browser requires interaction. We'll listen for the first click on the document.
     const handleInteraction = async () => {
       try {
         await audio.play();
@@ -24,7 +22,7 @@ export default function BackgroundMusic() {
         document.removeEventListener("click", handleInteraction);
         document.removeEventListener("touchstart", handleInteraction);
       } catch (error) {
-        console.error("Playback failed even after interaction:", error);
+        console.error("Không thể phát nhạc sau tương tác:", error);
       }
     };
 
@@ -32,8 +30,8 @@ export default function BackgroundMusic() {
       try {
         await audio.play();
         setIsPlaying(true);
-      } catch (err) {
-        console.log("Autoplay blocked. Waiting for user interaction.");
+      } catch {
+        console.log("Trình duyệt chặn tự động phát nhạc. Đang chờ người dùng tương tác.");
         document.addEventListener("click", handleInteraction);
         document.addEventListener("touchstart", handleInteraction);
       }
@@ -52,7 +50,6 @@ export default function BackgroundMusic() {
       if (isMuted) {
         audioRef.current.muted = false;
         setIsMuted(false);
-        // Ensure it's playing if it was paused for some reason
         audioRef.current.play().catch(console.error);
       } else {
         audioRef.current.muted = true;
@@ -79,10 +76,10 @@ export default function BackgroundMusic() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={toggleMute}
-          className="relative flex items-center justify-center w-12 h-12 rounded-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl text-foreground group overflow-hidden"
+          className="group relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-border/80 bg-background/85 text-foreground shadow-xl backdrop-blur-xl"
           aria-label={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+          title={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
         >
-          {/* Subtle pulse animation when playing */}
           {!isMuted && isPlaying && (
             <motion.div
               animate={{ 
@@ -94,7 +91,7 @@ export default function BackgroundMusic() {
                 repeat: Infinity,
                 ease: "easeInOut" 
               }}
-              className="absolute inset-0 bg-primary/20 rounded-full"
+              className="absolute inset-0 rounded-full bg-amber-500/20"
             />
           )}
 
@@ -107,7 +104,7 @@ export default function BackgroundMusic() {
                 exit={{ opacity: 0, rotate: 45 }}
                 transition={{ duration: 0.2 }}
               >
-                <VolumeX className="w-5 h-5" />
+                <VolumeX className="h-5 w-5" />
               </motion.div>
             ) : (
               <motion.div
@@ -117,12 +114,10 @@ export default function BackgroundMusic() {
                 exit={{ opacity: 0, rotate: 45 }}
                 transition={{ duration: 0.2 }}
               >
-                <Volume2 className="w-5 h-5" />
+                <Volume2 className="h-5 w-5" />
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Hover tooltips or labels can be added here if needed */}
         </motion.button>
       </div>
     </>

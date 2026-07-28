@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Plus, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FolderPlus, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +18,18 @@ export default function UploadZone({ folders, onUploadSuccess }: UploadZoneProps
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
+  useEffect(() => {
+    if (!selectedFolder && folders[0]) {
+      setSelectedFolder(folders[0]);
+    }
+  }, [folders, selectedFolder]);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
+    if (!selectedFolder) {
+      toast.error("Vui lòng tạo hoặc chọn album trước khi tải lên.");
+      return;
+    }
     
     setIsUploading(true);
     const files = Array.from(e.target.files);
@@ -35,87 +45,103 @@ export default function UploadZone({ folders, onUploadSuccess }: UploadZoneProps
           body: formData,
         });
 
-        if (!res.ok) throw new Error("Upload failed");
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Tải lên thất bại");
+        }
       }
       
-      toast.success("All files uploaded successfully!");
+      toast.success("Đã tải tất cả tệp lên thành công.");
       onUploadSuccess();
+      e.target.value = "";
     } catch (error) {
-      toast.error("Upload failed. Please try again.");
+      const message = error instanceof Error ? error.message : "Tải lên thất bại. Vui lòng thử lại.";
+      toast.error(message);
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleCreateFolder = async () => {
-    if (!newFolderName) return;
+    const folderName = newFolderName.trim();
+    if (!folderName) return;
     setIsCreatingFolder(true);
     
     try {
       const res = await fetch("/api/folders/create", {
         method: "POST",
-        body: JSON.stringify({ folderName: newFolderName }),
+        body: JSON.stringify({ folderName }),
       });
 
-      if (!res.ok) throw new Error("Failed to create folder");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Không thể tạo album");
+      }
       
-      toast.success(`Folder "${newFolderName}" created!`);
+      toast.success(`Đã tạo album "${folderName}".`);
       setNewFolderName("");
+      setSelectedFolder(folderName);
       onUploadSuccess();
     } catch (error) {
-      toast.error("Failed to create folder.");
+      const message = error instanceof Error ? error.message : "Không thể tạo album.";
+      toast.error(message);
     } finally {
       setIsCreatingFolder(false);
     }
   };
 
   return (
-    <div className="grid gap-8 p-6 bg-muted/30 rounded-xl border">
+    <div className="grid gap-8 rounded-2xl border bg-background p-5 shadow-sm md:p-6">
       <div>
-        <Label className="text-lg font-semibold mb-4 block">1. Create New Album</Label>
-        <div className="flex gap-2">
+        <Label className="mb-4 block text-lg font-bold">1. Tạo album mới</Label>
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
-            placeholder="Album name (e.g. Summer Vacation)"
+            placeholder="Tên album, ví dụ: Du lịch Đà Lạt"
+            className="h-11 rounded-xl"
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
           />
-          <Button onClick={handleCreateFolder} disabled={isCreatingFolder}>
-            {isCreatingFolder ? <Loader2 className="animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-            Create
+          <Button onClick={handleCreateFolder} disabled={isCreatingFolder} className="h-11 rounded-xl px-4">
+            {isCreatingFolder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FolderPlus className="mr-2 h-4 w-4" />}
+            Tạo album
           </Button>
         </div>
       </div>
 
       <div>
-        <Label className="text-lg font-semibold mb-4 block">2. Upload Photos/Videos</Label>
+        <Label className="mb-4 block text-lg font-bold">2. Tải ảnh và video lên</Label>
         <div className="space-y-4">
           <div>
-            <Label className="text-sm text-muted-foreground mb-2 block">Choose Destination</Label>
+            <Label className="mb-2 block text-sm text-muted-foreground">Chọn album đích</Label>
             <select
-              className="w-full p-2 rounded-md border bg-background"
+              className="h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none transition-colors focus:border-primary"
               value={selectedFolder}
               onChange={(e) => setSelectedFolder(e.target.value)}
+              disabled={folders.length === 0}
             >
+              {folders.length === 0 && <option value="">Chưa có album</option>}
               {folders.map((f) => (
                 <option key={f} value={f}>{f}</option>
               ))}
             </select>
           </div>
           
-          <div className="border-2 border-dashed rounded-lg p-10 flex flex-col items-center justify-center relative">
-            <Upload className="w-10 h-10 text-muted-foreground mb-4" />
-            <p className="text-sm text-muted-foreground">Click or drag and drop to upload</p>
+          <div className="relative flex min-h-44 flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-muted/20 p-8 text-center transition-colors hover:border-primary/50 hover:bg-muted/30">
+            <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
+            <p className="font-semibold text-foreground">Bấm để chọn tệp hoặc kéo thả vào đây</p>
+            <p className="mt-2 text-sm text-muted-foreground">Hỗ trợ tải nhiều ảnh và video trong một lần.</p>
             <input
               type="file"
               multiple
-              className="absolute inset-0 opacity-0 cursor-pointer"
+              accept="image/*,video/*"
+              className="absolute inset-0 cursor-pointer opacity-0"
               onChange={handleUpload}
-              disabled={isUploading}
+              disabled={isUploading || !selectedFolder}
             />
             {isUploading && (
-              <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                <Loader2 className="animate-spin w-8 h-8 mr-2" />
-                <span>Uploading...</span>
+              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-background/85">
+                <Loader2 className="mr-2 h-8 w-8 animate-spin" />
+                <span className="font-semibold">Đang tải lên...</span>
               </div>
             )}
           </div>

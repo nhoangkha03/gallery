@@ -1,28 +1,25 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { sortFolders } from "@/lib/config";
+import type { CloudinaryFolder, CloudinarySearchResponse, GalleryFolder } from "@/lib/gallery";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    // Cloudinary folders API requires the "gallery" prefix if you organized it that way
-    // For simplicity, we'll list all root folders first
-    const { folders } = await cloudinary.api.root_folders();
+    const { folders } = await cloudinary.api.root_folders() as { folders?: CloudinaryFolder[] };
     
-    const sortedFolders = sortFolders(folders);
+    const sortedFolders = sortFolders(folders || []);
     
-    // Also fetch the first image of each folder to use as a thumbnail
     const foldersWithThumbnails = await Promise.all(
-      sortedFolders.map(async (folder: any) => {
-        // Fetch count and thumbnail properly
+      sortedFolders.map(async (folder): Promise<GalleryFolder> => {
         const { resources, total_count } = await cloudinary.search
           .expression(`folder:"${folder.name}"`)
           .sort_by("public_id", "desc")
           .max_results(30)
-          .execute();
+          .execute() as CloudinarySearchResponse;
         
-        let firstItem = resources.find((r: any) => r.resource_type === "image") || resources[0];
+        const firstItem = resources.find((r) => r.resource_type === "image") || resources[0];
         let thumbUrl = firstItem?.secure_url || null;
 
         if (thumbUrl && firstItem?.resource_type === "video") {
@@ -40,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json(foldersWithThumbnails);
   } catch (error) {
-    console.error("Error fetching folders:", error);
-    return NextResponse.json({ error: "Failed to fetch folders" }, { status: 500 });
+    console.error("Không thể tải danh sách album:", error);
+    return NextResponse.json({ error: "Không thể tải danh sách album" }, { status: 500 });
   }
 }
