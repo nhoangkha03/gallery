@@ -214,7 +214,7 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
              </div>
           </div>
 
-          <div className="relative z-10 mt-0 flex h-full w-full items-center justify-center overflow-hidden p-3 pb-28 pt-20 md:p-6 md:pb-32 md:pt-24">
+          <div className="relative z-10 mt-0 flex h-full w-full items-center justify-center overflow-hidden p-3 pt-20 md:p-6 md:pt-24 lg:pr-28">
             <AnimatePresence initial={false} custom={direction}>
               <motion.div
                 key={currentItem.public_id}
@@ -276,55 +276,56 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
             </Button>
           </div>
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-50 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-10">
-            <div className="mx-auto flex max-w-5xl flex-col items-center gap-3">
-              <div className="pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/10 p-2 backdrop-blur-md">
-                {items.map((item, index) => {
-                  const thumbUrl = getPreviewUrl(item);
-                  const isActive = index === currentIndex;
+          <div className="pointer-events-none absolute bottom-6 right-4 top-24 z-50 hidden lg:flex">
+            <div className="pointer-events-auto flex w-20 flex-col gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-white/10 p-2 backdrop-blur-md">
+              {items.map((item, index) => {
+                const thumbUrl = getPreviewUrl(item);
+                const isActive = index === currentIndex;
 
-                  return (
-                    <button
-                      key={item.public_id}
-                      type="button"
-                      onClick={() => {
-                        setDirection(index > currentIndex ? 1 : -1);
-                        onNavigate(index);
-                      }}
-                      className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-2 transition-all md:h-16 md:w-16 ${isActive ? "scale-105 ring-amber-400" : "ring-white/10 opacity-70 hover:opacity-100"}`}
-                      aria-label={`Mở tệp ${index + 1}`}
-                    >
-                      {thumbUrl ? (
-                        <Image
-                          src={thumbUrl}
-                          alt={getAssetName(item.public_id)}
-                          fill
-                          sizes="64px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center bg-white/10 text-white">
-                          {index + 1}
-                        </span>
-                      )}
-                      {item.resource_type === "video" && (
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/25">
-                          <Play className="h-4 w-4 fill-white text-white" />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 backdrop-blur-md md:flex">
-                <span className="rounded border border-white/10 bg-white/10 p-1">ESC</span> Đóng
-                <span className="mx-1 h-1 w-1 rounded-full bg-white/20" />
-                <span className="rounded border border-white/10 bg-white/10 p-1">←</span> Trước
-                <span className="mx-1 h-1 w-1 rounded-full bg-white/20" />
-                <span className="rounded border border-white/10 bg-white/10 p-1">→</span> Sau
-              </div>
+                return (
+                  <button
+                    key={item.public_id}
+                    type="button"
+                    onClick={() => {
+                      setDirection(index > currentIndex ? 1 : -1);
+                      onNavigate(index);
+                    }}
+                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl ring-2 transition-all ${isActive ? "scale-105 ring-amber-400" : "ring-white/10 opacity-70 hover:opacity-100"}`}
+                    aria-label={`Mở tệp ${index + 1}`}
+                  >
+                    {thumbUrl ? (
+                      <Image
+                        src={thumbUrl}
+                        alt={getAssetName(item.public_id)}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center bg-white/10 text-white">
+                        {index + 1}
+                      </span>
+                    )}
+                    {item.resource_type === "video" && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                        <Play className="h-4 w-4 fill-white text-white" />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          {currentItem.resource_type !== "video" && (
+            <div className="pointer-events-none absolute bottom-6 left-1/2 z-50 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/55 backdrop-blur-md md:flex">
+              <span className="rounded border border-white/10 bg-white/10 p-1">ESC</span> Đóng
+              <span className="mx-1 h-1 w-1 rounded-full bg-white/20" />
+              <span className="rounded border border-white/10 bg-white/10 p-1">←</span> Trước
+              <span className="mx-1 h-1 w-1 rounded-full bg-white/20" />
+              <span className="rounded border border-white/10 bg-white/10 p-1">→</span> Sau
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
