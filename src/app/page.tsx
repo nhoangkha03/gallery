@@ -1,6 +1,8 @@
+import Image from "next/image";
 import AlbumGrid from "@/components/AlbumGrid";
 import cloudinary from "@/lib/cloudinary";
 import { sortFolders } from "@/lib/config";
+import { formatAlbumName } from "@/lib/gallery";
 import type { CloudinaryFolder, CloudinarySearchResponse, GalleryFolder } from "@/lib/gallery";
 
 // Revalidate data every 60 seconds instead of force-dynamic to save Cloudinary API credits
@@ -60,9 +62,10 @@ async function getFolders(): Promise<GalleryFolder[]> {
 
 export default async function HomePage() {
   const folders = await getFolders();
+  const featuredFolders = folders.filter((folder) => folder.thumbnail).slice(0, 4);
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,var(--background),oklch(0.985_0.01_95))]">
+    <main className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <section className="border-b bg-background">
         <div className="mx-auto grid w-full max-w-[1800px] gap-8 px-4 py-10 lg:grid-cols-[1fr_auto] lg:px-8 lg:py-14">
           <div className="max-w-3xl">
@@ -77,20 +80,53 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="grid min-w-[260px] grid-cols-2 gap-3 rounded-2xl border bg-muted/25 p-4 lg:min-w-[360px]">
-            <div className="rounded-xl bg-background p-4 ring-1 ring-border">
-              <p className="text-sm font-medium text-muted-foreground">Album</p>
-              <p className="mt-2 text-3xl font-black">{folders.length}</p>
-            </div>
-            <div className="rounded-xl bg-background p-4 ring-1 ring-border">
-              <p className="text-sm font-medium text-muted-foreground">Tổng tệp</p>
-              <p className="mt-2 text-3xl font-black">
-                {folders.reduce((total, folder) => total + folder.count, 0)}
-              </p>
-            </div>
-            <div className="col-span-2 rounded-xl bg-foreground p-4 text-background">
-              <p className="text-sm font-semibold opacity-75">Cập nhật</p>
-              <p className="mt-2 text-lg font-bold">Dữ liệu tự làm mới mỗi 60 giây</p>
+          <div className="min-w-[260px] rounded-2xl border bg-muted/25 p-4 lg:min-w-[420px]">
+            {featuredFolders.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {featuredFolders.map((folder, index) => (
+                  <div
+                    key={folder.path}
+                    className={`relative overflow-hidden rounded-xl bg-muted ${index === 0 ? "col-span-2 aspect-[16/8]" : "aspect-[4/3]"}`}
+                  >
+                    <Image
+                      src={folder.thumbnail || ""}
+                      alt={`Ảnh nổi bật album ${formatAlbumName(folder.name)}`}
+                      fill
+                      sizes="(min-width: 1024px) 420px, 100vw"
+                      className="object-cover"
+                      priority={index === 0}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+                    <p className="absolute bottom-3 left-3 right-3 truncate text-sm font-bold capitalize text-white">
+                      {formatAlbumName(folder.name)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex aspect-[16/10] items-center justify-center rounded-xl border-2 border-dashed bg-background text-center">
+                <div>
+                  <p className="text-lg font-black">Chưa có ảnh nổi bật</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Tải ảnh đầu tiên để khu vực này tự cập nhật.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-background p-4 ring-1 ring-border">
+                <p className="text-sm font-medium text-muted-foreground">Album</p>
+                <p className="mt-2 text-3xl font-black">{folders.length}</p>
+              </div>
+              <div className="rounded-xl bg-background p-4 ring-1 ring-border">
+                <p className="text-sm font-medium text-muted-foreground">Tổng tệp</p>
+                <p className="mt-2 text-3xl font-black">
+                  {folders.reduce((total, folder) => total + folder.count, 0)}
+                </p>
+              </div>
+              <div className="col-span-2 rounded-xl bg-foreground p-4 text-background">
+                <p className="text-sm font-semibold opacity-75">Cập nhật</p>
+                <p className="mt-2 text-lg font-bold">Dữ liệu tự làm mới mỗi 60 giây</p>
+              </div>
             </div>
           </div>
         </div>

@@ -14,9 +14,10 @@ interface AlbumCardProps {
   path: string;
   thumbnail: string | null;
   count: number;
+  layoutMode?: "luoi" | "danhsach";
 }
 
-export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardProps) {
+export default function AlbumCard({ name, path, thumbnail, count, layoutMode = "luoi" }: AlbumCardProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const displayName = formatAlbumName(name);
@@ -52,8 +53,8 @@ export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardPro
 
   return (
     <Link href={albumHref} className="block h-full">
-      <Card className="group relative h-full overflow-hidden rounded-2xl border bg-background py-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-        <CardContent className="relative flex aspect-[4/3] items-center justify-center overflow-hidden p-0">
+      <Card className={`group relative h-full overflow-hidden rounded-2xl border bg-background py-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${layoutMode === "danhsach" ? "md:grid md:grid-cols-[240px_1fr]" : ""}`}>
+        <CardContent className={`relative flex items-center justify-center overflow-hidden p-0 ${layoutMode === "danhsach" ? "aspect-[16/10] md:aspect-auto md:min-h-40" : "aspect-[4/3]"}`}>
           {thumbnail ? (
             <Image
               src={thumbnail}
@@ -63,7 +64,7 @@ export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardPro
               className="object-cover brightness-95 transition-transform duration-700 group-hover:scale-105 group-hover:brightness-100"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,oklch(0.97_0.03_210),oklch(0.96_0.04_80))]">
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-accent/20">
               <Folder className="h-16 w-16 text-primary/45 transition-transform duration-500 group-hover:scale-110" />
             </div>
           )}
@@ -94,6 +95,19 @@ export default function AlbumCard({ name, path, thumbnail, count }: AlbumCardPro
              </div>
           </div>
         </CardContent>
+        {layoutMode === "danhsach" && (
+          <div className="hidden min-w-0 flex-col justify-between p-5 md:flex">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-600">Album</p>
+              <h3 className="mt-2 truncate text-2xl font-black capitalize tracking-tight">{displayName}</h3>
+              <p className="mt-2 text-sm font-medium text-muted-foreground">{pluralizeAsset(count)} trong bộ sưu tập này</p>
+            </div>
+            <div className="mt-5 flex items-center gap-2 text-sm font-bold text-primary">
+              Mở album
+              <ArrowUpRight className="h-4 w-4" />
+            </div>
+          </div>
+        )}
       </Card>
     </Link>
   );

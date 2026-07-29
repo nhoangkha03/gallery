@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Home, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import BrandLogo from "@/components/BrandLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -18,17 +19,10 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
       <div className="mx-auto flex h-16 w-full max-w-[1800px] items-center justify-between px-4 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center gap-3 group" aria-label="Về trang chủ Ký ức số">
-          <Image
-            src="/logo.svg"
-            alt="Ký ức số"
-            width={154}
-            height={45}
-            priority
-            className="h-11 w-auto"
-          />
+          <BrandLogo />
         </Link>
 
-        <div className="flex items-center gap-1 sm:gap-4 font-medium">
+        <div className="flex items-center gap-1 font-medium sm:gap-3">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -49,6 +43,7 @@ export default function Navbar() {
               </Link>
             );
           })}
+          <ThemeToggle />
         </div>
       </div>
     </nav>

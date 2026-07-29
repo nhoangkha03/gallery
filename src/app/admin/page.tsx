@@ -1,25 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Folder, Lock, LogOut, ShieldCheck, Trash2 } from "lucide-react";
+import { Database, Folder, Lock, LogOut, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import UploadZone from "@/components/UploadZone";
 import Link from "next/link";
 import { toast } from "sonner";
 
+interface AdminFolder {
+  name: string;
+  count: number;
+}
+
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [password, setPassword] = useState("");
-  const [folders, setFolders] = useState<string[]>([]);
+  const [folders, setFolders] = useState<AdminFolder[]>([]);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const folderNames = folders.map((folder) => folder.name);
+  const totalItems = folders.reduce((total, folder) => total + folder.count, 0);
 
   const fetchFolders = async () => {
-    const res = await fetch("/api/folders");
-    if (res.ok) {
-      const data = await res.json() as Array<{ name: string }>;
-      setFolders(data.map((f) => f.name));
+    setIsRefreshing(true);
+    try {
+      const res = await fetch("/api/folders");
+      if (res.ok) {
+        const data = await res.json() as Array<{ name: string; count?: number }>;
+        setFolders(data.map((f) => ({ name: f.name, count: f.count || 0 })));
+      }
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -113,7 +126,7 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,var(--background),oklch(0.985_0.01_95))] p-4">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
         <form onSubmit={handleLogin} className="group relative w-full max-w-sm overflow-hidden rounded-2xl border bg-card p-8 shadow-xl">
           <div className="absolute left-0 top-0 h-1 w-full bg-amber-500" />
           <div className="text-center">
@@ -147,7 +160,7 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,var(--background),oklch(0.985_0.01_95))] pb-20">
+    <main className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-20">
       <header className="relative mb-10 border-b bg-background py-10">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col justify-between gap-6 px-4 md:flex-row md:items-center">
           <div>
@@ -165,31 +178,67 @@ export default function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-[1200px] space-y-10 px-4">
-        <UploadZone folders={folders} onUploadSuccess={fetchFolders} />
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border bg-background p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-muted-foreground">Tổng album</p>
+              <Folder className="h-5 w-5 text-amber-600" />
+            </div>
+            <p className="mt-3 text-4xl font-black">{folders.length}</p>
+          </div>
+          <div className="rounded-2xl border bg-background p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-muted-foreground">Tổng tệp</p>
+              <Database className="h-5 w-5 text-amber-600" />
+            </div>
+            <p className="mt-3 text-4xl font-black">{totalItems}</p>
+          </div>
+          <div className="rounded-2xl border bg-foreground p-5 text-background shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold opacity-75">Phiên quản trị</p>
+              <ShieldCheck className="h-5 w-5 text-amber-300" />
+            </div>
+            <p className="mt-3 text-xl font-black">Đang hoạt động</p>
+            <p className="mt-2 text-sm opacity-75">Cookie bảo mật có hiệu lực trong 8 giờ.</p>
+          </div>
+        </div>
+
+        <UploadZone folders={folderNames} onUploadSuccess={fetchFolders} />
         
         <section className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-          <h2 className="mb-6 flex items-center gap-2 text-2xl font-black">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Folder className="h-5 w-5" />
-            </span>
-            Danh sách album
-          </h2>
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <h2 className="flex items-center gap-2 text-2xl font-black">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Folder className="h-5 w-5" />
+              </span>
+              Danh sách album
+            </h2>
+            <Button
+              variant="outline"
+              onClick={fetchFolders}
+              disabled={isRefreshing}
+              className="h-10 w-fit rounded-xl"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              Làm mới
+            </Button>
+          </div>
           
           <div className="grid gap-4">
             {folders.length === 0 ? (
               <p className="text-muted-foreground">Chưa có album nào.</p>
             ) : (
               folders.map((folder) => (
-                <div key={folder} className="group flex items-center justify-between rounded-2xl border border-transparent bg-muted/20 p-4 transition-all hover:border-primary/20 hover:bg-muted/40">
+                <div key={folder.name} className="group flex items-center justify-between rounded-2xl border border-transparent bg-muted/20 p-4 transition-all hover:border-primary/20 hover:bg-muted/40">
                   <div className="min-w-0">
-                    <h3 className="truncate text-lg font-bold capitalize">{folder.replace(/-/g, " ")}</h3>
-                    <p className="text-sm text-muted-foreground">{folder}</p>
+                    <h3 className="truncate text-lg font-bold capitalize">{folder.name.replace(/-/g, " ")}</h3>
+                    <p className="text-sm text-muted-foreground">{folder.name} · {folder.count} tệp</p>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="rounded-xl text-muted-foreground opacity-0 transition-colors hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                    onClick={() => handleDeleteFolder(folder)}
+                    onClick={() => handleDeleteFolder(folder.name)}
                     title="Xóa album"
                   >
                     <Trash2 className="h-5 w-5" />

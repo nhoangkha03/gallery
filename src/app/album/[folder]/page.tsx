@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, Images } from "lucide-react";
+import { ChevronLeft, Film, Image as ImageIcon, Images } from "lucide-react";
 import MediaGrid from "@/components/MediaGrid";
 import cloudinary from "@/lib/cloudinary";
-import { formatAlbumName } from "@/lib/gallery";
+import { formatAlbumName, getPreviewUrl } from "@/lib/gallery";
 import type { CloudinarySearchResponse, MediaItem } from "@/lib/gallery";
 
 async function getMedia(folder: string): Promise<MediaItem[]> {
@@ -27,9 +29,25 @@ async function getMedia(folder: string): Promise<MediaItem[]> {
 
     return allResources;
   } catch (error) {
-    console.error(`Error fetching media for folder ${folder}:`, error);
+    console.error(`Không thể tải media trong album ${folder}:`, error);
     return [];
   }
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ folder: string }> }): Promise<Metadata> {
+  const { folder } = await params;
+  const albumName = formatAlbumName(decodeURIComponent(folder));
+
+  return {
+    title: albumName,
+    description: `Xem ảnh và video trong album ${albumName}.`,
+    openGraph: {
+      title: `${albumName} | Ký ức số`,
+      description: `Album ảnh và video ${albumName}.`,
+      locale: "vi_VN",
+      type: "website",
+    },
+  };
 }
 
 export default async function AlbumPage({ params }: { params: Promise<{ folder: string }> }) {
@@ -37,11 +55,26 @@ export default async function AlbumPage({ params }: { params: Promise<{ folder: 
   const decodedFolder = decodeURIComponent(folder);
   const media = await getMedia(decodedFolder);
   const albumName = formatAlbumName(decodedFolder);
+  const imageCount = media.filter((item) => item.resource_type === "image").length;
+  const videoCount = media.filter((item) => item.resource_type === "video").length;
+  const featuredPreview = getPreviewUrl(media[0]);
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,var(--background),oklch(0.985_0.01_95))]">
-      <section className="relative mb-8 border-b bg-background py-10 lg:py-12">
-        <div className="mx-auto w-full max-w-[1800px] px-4 lg:px-8">
+    <main className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      <section className="relative mb-8 overflow-hidden border-b bg-background py-10 lg:py-12">
+        {featuredPreview && (
+          <div className="absolute inset-0 opacity-10">
+            <Image
+              src={featuredPreview}
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover blur-2xl saturate-150"
+              priority
+            />
+          </div>
+        )}
+        <div className="relative mx-auto w-full max-w-[1800px] px-4 lg:px-8">
           <Link
             href="/"
             className="group mb-6 inline-flex items-center text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
@@ -49,17 +82,32 @@ export default async function AlbumPage({ params }: { params: Promise<{ folder: 
             <ChevronLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1" />
             Quay lại trang chủ
           </Link>
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-amber-600">Album</p>
               <h1 className="text-4xl font-black capitalize tracking-tight md:text-6xl">
                 {albumName || "Album"}
               </h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+                Duyệt nội dung theo loại tệp, tìm nhanh theo tên và mở trình xem toàn màn hình.
+              </p>
             </div>
-            <div className="flex w-fit items-center gap-3 rounded-2xl border bg-muted/25 px-5 py-3">
-              <Images className="h-5 w-5 text-amber-600" />
-              <span className="text-2xl font-black">{media.length}</span>
-              <span className="font-medium text-muted-foreground">tệp media</span>
+            <div className="grid w-full gap-3 rounded-2xl border bg-background/85 p-3 shadow-sm backdrop-blur md:w-[420px] md:grid-cols-3">
+              <div className="rounded-xl bg-muted/40 p-4">
+                <Images className="mb-3 h-5 w-5 text-amber-600" />
+                <p className="text-2xl font-black">{media.length}</p>
+                <p className="text-sm font-semibold text-muted-foreground">Tất cả</p>
+              </div>
+              <div className="rounded-xl bg-muted/40 p-4">
+                <ImageIcon className="mb-3 h-5 w-5 text-amber-600" />
+                <p className="text-2xl font-black">{imageCount}</p>
+                <p className="text-sm font-semibold text-muted-foreground">Ảnh</p>
+              </div>
+              <div className="rounded-xl bg-muted/40 p-4">
+                <Film className="mb-3 h-5 w-5 text-amber-600" />
+                <p className="text-2xl font-black">{videoCount}</p>
+                <p className="text-sm font-semibold text-muted-foreground">Video</p>
+              </div>
             </div>
           </div>
         </div>

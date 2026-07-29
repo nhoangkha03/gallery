@@ -17,6 +17,7 @@ export default function UploadZone({ folders, onUploadSuccess }: UploadZoneProps
   const [newFolderName, setNewFolderName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     if (!selectedFolder && folders[0]) {
@@ -33,9 +34,11 @@ export default function UploadZone({ folders, onUploadSuccess }: UploadZoneProps
     
     setIsUploading(true);
     const files = Array.from(e.target.files);
+    setUploadProgress({ current: 0, total: files.length });
     
     try {
-      for (const file of files) {
+      for (const [index, file] of files.entries()) {
+        setUploadProgress({ current: index + 1, total: files.length });
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder", selectedFolder);
@@ -59,6 +62,7 @@ export default function UploadZone({ folders, onUploadSuccess }: UploadZoneProps
       toast.error(message);
     } finally {
       setIsUploading(false);
+      setUploadProgress({ current: 0, total: 0 });
     }
   };
 
@@ -124,6 +128,11 @@ export default function UploadZone({ folders, onUploadSuccess }: UploadZoneProps
                 <option key={f} value={f}>{f}</option>
               ))}
             </select>
+            {selectedFolder && (
+              <p className="mt-2 text-sm font-medium text-muted-foreground">
+                Tệp mới sẽ được lưu vào album <span className="font-bold text-foreground">{selectedFolder}</span>.
+              </p>
+            )}
           </div>
           
           <div className="relative flex min-h-44 flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-muted/20 p-8 text-center transition-colors hover:border-primary/50 hover:bg-muted/30">
@@ -139,9 +148,17 @@ export default function UploadZone({ folders, onUploadSuccess }: UploadZoneProps
               disabled={isUploading || !selectedFolder}
             />
             {isUploading && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-background/85">
-                <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                <span className="font-semibold">Đang tải lên...</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-background/90 px-8 text-center">
+                <Loader2 className="mb-3 h-8 w-8 animate-spin" />
+                <span className="font-bold">Đang tải lên {uploadProgress.current}/{uploadProgress.total}</span>
+                <div className="mt-4 h-2 w-full max-w-xs overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-amber-500 transition-all"
+                    style={{
+                      width: `${uploadProgress.total ? (uploadProgress.current / uploadProgress.total) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
               </div>
             )}
           </div>
