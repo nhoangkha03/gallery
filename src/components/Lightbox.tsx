@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { getAssetName, getPreviewUrl } from "@/lib/gallery";
 import type { MediaItem } from "@/lib/gallery";
+import LightboxVideo from "@/components/LightboxVideo";
 
 interface LightboxProps {
   isOpen: boolean;
@@ -213,7 +214,7 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
              </div>
           </div>
 
-          <div className="relative z-10 mt-0 flex h-full w-full items-center justify-center overflow-hidden p-2 pb-28 md:p-4 md:pb-32">
+          <div className="relative z-10 mt-0 flex h-full w-full items-center justify-center overflow-hidden p-3 pb-28 pt-20 md:p-6 md:pb-32 md:pt-24">
             <AnimatePresence initial={false} custom={direction}>
               <motion.div
                 key={currentItem.public_id}
@@ -230,23 +231,23 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
                 className="absolute w-full h-full flex items-center justify-center"
               >
                 {currentItem.resource_type === "video" ? (
-                  <video
+                  <LightboxVideo
                     src={currentItem.secure_url}
-                    controls
-                    autoPlay
                     poster={previewUrl || undefined}
-                    className="max-h-full max-w-full rounded-2xl shadow-2xl ring-1 ring-white/10"
+                    title={currentName}
                   />
                 ) : (
-                  <div className="relative h-full w-full">
-                    <Image
-                      src={currentItem.secure_url}
-                      alt={currentItem.public_id}
-                      fill
-                      sizes="100vw"
-                      className="object-contain drop-shadow-2xl"
-                      priority
-                    />
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="relative h-full w-full max-w-7xl overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-2xl">
+                      <Image
+                        src={currentItem.secure_url}
+                        alt={currentItem.public_id}
+                        fill
+                        sizes="100vw"
+                        className="object-contain"
+                        priority
+                      />
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -275,9 +276,9 @@ export default function Lightbox({ isOpen, onClose, items, currentIndex, onNavig
             </Button>
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 z-50 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-10">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-50 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-10">
             <div className="mx-auto flex max-w-5xl flex-col items-center gap-3">
-              <div className="flex max-w-full gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/10 p-2 backdrop-blur-md">
+              <div className="pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/10 p-2 backdrop-blur-md">
                 {items.map((item, index) => {
                   const thumbUrl = getPreviewUrl(item);
                   const isActive = index === currentIndex;
